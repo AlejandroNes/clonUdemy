@@ -2,11 +2,18 @@
 const listaCursos = document.querySelector("#lista-cursos");
 const listaCarrito = document.querySelector("#lista-carrito tbody");
 const vaciarCarrito = document.querySelector("#vaciar-carrito");
+const pagoTotal = document.querySelector("#pago-total");
 let arrayCursos = [];
 
 //eventos
 (() => {
   listaCursos.addEventListener("click", agregarCurso);
+  //eliminar curso
+  listaCarrito.addEventListener("click", eliminarCurso);
+  vaciarCarrito.addEventListener("click", () => {
+    arrayCursos = [];
+    mostrarCarrito();
+  });
 })();
 
 //funciones
@@ -30,12 +37,34 @@ function addCurso(curso) {
     cantidad: 1,
   };
 
-  arrayCursos = [...arrayCursos, objCurso];
-  mostrarCarrito();
+  //comprobar si hay cursos duplicados
+  const verificarCurso = arrayCursos.some(
+    (item) => item.idCurso === objCurso.idCurso
+  );
+
+  if (verificarCurso) {
+    //aumentar cantidad de un curso
+    const arrayActualizado = arrayCursos.map((item) => {
+      if (item.idCurso === objCurso.idCurso) {
+        item.cantidad++;
+        item.precio += objCurso.precio;
+        return item;
+      } else {
+        return item;
+      }
+    });
+    arrayCursos = [...arrayActualizado];
+    mostrarCarrito();
+  } else {
+    //agregar nuevo curso al carrito
+    arrayCursos = [...arrayCursos, objCurso];
+    mostrarCarrito();
+  }
 }
 
 function mostrarCarrito() {
   limpiarCarrito();
+  totalAPagar();
   arrayCursos.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -52,5 +81,43 @@ function mostrarCarrito() {
 function limpiarCarrito() {
   while (listaCarrito.firstChild) {
     listaCarrito.removeChild(listaCarrito.firstChild);
+  }
+}
+
+//pago total
+function totalAPagar() {
+  const totalPago = arrayCursos.reduce((acumulador, item) => {
+    return acumulador + item.precio;
+  }, 0);
+  pagoTotal.textContent = totalPago;
+}
+
+function eliminarCurso(e) {
+  if (e.target.classList.contains("borrar-curso")) {
+    const idCursoEliminado = e.target.getAttribute("data-id");
+
+    //verificar si tiene mas items de compra un curso
+    const curso = arrayCursos.find((item) => item.idCurso === idCursoEliminado);
+    const precioCurso = curso.precio / curso.cantidad;
+
+    if (curso.cantidad > 1) {
+      const arrayActualizado = arrayCursos.map((item) => {
+        if (item.idCurso === idCursoEliminado) {
+          item.cantidad--;
+          item.precio -= precioCurso;
+          return item;
+        } else {
+          return item;
+        }
+      });
+      arrayCursos = [...arrayActualizado];
+      mostrarCarrito();
+    } else {
+      const arrayActualizado = arrayCursos.filter(
+        (item) => item.idCurso !== idCursoEliminado
+      );
+      arrayCursos = [...arrayActualizado];
+      mostrarCarrito();
+    }
   }
 }
